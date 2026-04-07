@@ -1,0 +1,25 @@
+--- a/miner.py
++++ b/miner.py
+@@ -183,10 +183,22 @@
+
++def _get_embedding_fn():
++    """Use Ollama BGE-M3 (multilingual) if available, else ChromaDB default."""
++    try:
++        from mempalace.ollama_embedding import OllamaEmbeddingFunction
++        import requests
++        requests.get("http://localhost:11434/api/tags", timeout=2)
++        return OllamaEmbeddingFunction(model="bge-m3")
++    except Exception:
++        return None  # ChromaDB default (MiniLM-L6)
++
++
+ def get_collection(palace_path: str):
+     os.makedirs(palace_path, exist_ok=True)
+     client = chromadb.PersistentClient(path=palace_path)
++    ef = _get_embedding_fn()
+     try:
+-        return client.get_collection("mempalace_drawers")
++        return client.get_collection("mempalace_drawers", embedding_function=ef)
+     except Exception:
+-        return client.create_collection("mempalace_drawers")
++        return client.create_collection("mempalace_drawers", embedding_function=ef)

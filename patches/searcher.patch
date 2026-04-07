@@ -1,0 +1,34 @@
+--- a/searcher.py
++++ b/searcher.py
+@@ -12,6 +12,17 @@
+ import chromadb
+
+
++def _get_embedding_fn():
++    """Use Ollama BGE-M3 (multilingual) if available, else ChromaDB default."""
++    try:
++        from mempalace.ollama_embedding import OllamaEmbeddingFunction
++        import requests
++        requests.get("http://localhost:11434/api/tags", timeout=2)
++        return OllamaEmbeddingFunction(model="bge-m3")
++    except Exception:
++        return None
++
++
+ def search(query: str, palace_path: str, wing: str = None, room: str = None, n_results: int = 5):
+     """..."""
+     try:
+         client = chromadb.PersistentClient(path=palace_path)
+-        col = client.get_collection("mempalace_drawers")
++        ef = _get_embedding_fn()
++        col = client.get_collection("mempalace_drawers", embedding_function=ef)
+     except Exception:
+
+@@ -87,8 +98,9 @@
+     """..."""
+     try:
+         client = chromadb.PersistentClient(path=palace_path)
+-        col = client.get_collection("mempalace_drawers")
++        ef = _get_embedding_fn()
++        col = client.get_collection("mempalace_drawers", embedding_function=ef)
+     except Exception as e:
