@@ -1,0 +1,27 @@
+--- a/mcp_server.py
++++ b/mcp_server.py
+@@ -40,11 +40,23 @@
+
++def _get_embedding_fn():
++    """Use Ollama BGE-M3 (multilingual) if available, else ChromaDB default."""
++    try:
++        from mempalace.ollama_embedding import OllamaEmbeddingFunction
++        import requests
++        requests.get("http://localhost:11434/api/tags", timeout=2)
++        return OllamaEmbeddingFunction(model="bge-m3")
++    except Exception:
++        return None
++
++
+ def _get_collection(create=False):
+     """Return the ChromaDB collection, or None on failure."""
+     try:
+         client = chromadb.PersistentClient(path=_config.palace_path)
++        ef = _get_embedding_fn()
+         if create:
+-            return client.get_or_create_collection(_config.collection_name)
+-        return client.get_collection(_config.collection_name)
++            return client.get_or_create_collection(_config.collection_name, embedding_function=ef)
++        return client.get_collection(_config.collection_name, embedding_function=ef)
+     except Exception:
+         return None
