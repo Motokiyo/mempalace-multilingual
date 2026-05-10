@@ -1,0 +1,26 @@
+--- /tmp/upstream-embedding.py	2026-05-10 20:41:40
++++ /Users/alexandre/.pyenv/versions/3.13.3/lib/python3.13/site-packages/mempalace/embedding.py	2026-05-10 20:40:45
+@@ -122,7 +122,23 @@
+     ``device=None`` reads from :class:`MempalaceConfig.embedding_device`.
+     The returned function is shared across calls with the same resolved
+     provider list so we only pay model-load cost once per process.
++
++    Multilingual override: set ``MEMPALACE_EMBEDDING_BACKEND=ollama`` to
++    use ``ollama_embedding.OllamaEmbeddingFunction`` (BGE-M3, 100+ langs,
++    1024 dims). Model overridable via ``MEMPALACE_OLLAMA_MODEL``.
+     """
++    import os as _os
++    if _os.environ.get("MEMPALACE_EMBEDDING_BACKEND") == "ollama":
++        cache_key = ("ollama", _os.environ.get("MEMPALACE_OLLAMA_MODEL", "bge-m3"))
++        cached = _EF_CACHE.get(cache_key)
++        if cached is not None:
++            return cached
++        from .ollama_embedding import OllamaEmbeddingFunction
++        ef = OllamaEmbeddingFunction(model=cache_key[1])
++        _EF_CACHE[cache_key] = ef
++        logger.info("Embedding function initialized (backend=ollama model=%s)", cache_key[1])
++        return ef
++
+     if device is None:
+         from .config import MempalaceConfig
+ 
